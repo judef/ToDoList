@@ -1,0 +1,50 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f7f6;
+  display: flex;
+  justify-content: center;
+  padding-top: 50px;
+}
+.container {
+  background: white;
+  width: 400px;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+h1 { text-align: center; color: #333; margin-bottom: 1.5rem; }
+.todo-form { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+.todo-form input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+.todo-form button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.todo-list { list-style: none; padding: 0; }
+.todo-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  transition: background 0.2s;
+}
+.todo-list li:hover { background: #fafafa; }
+.todo-list li.completed span {
+  text-decoration: line-through;
+  color: #888;
+}
+.todo-list span { flex: 1; cursor: pointer; }
+.actions { display: flex; gap: 5px; }
+.edit-btn { background: #ffc107; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+.delete-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+.edit-mode { display: flex; width: 100%; gap: 10px; }
+.edit-mode input { flex: 1; padding: 5px; }
