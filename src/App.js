@@ -5,12 +5,19 @@ function App() {
   const [inputValue, setInputValue] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetch('/api/todos')
       .then(res => res.json())
       .then(data => setTodos(data));
   }, []);
+
+  const filteredTodos = todos.filter(todo => {
+    if (filter === 'active') return !todo.completed;
+    if (filter === 'completed') return todo.completed;
+    return true;
+  });
 
   const addTodo = async (e) => {
     e.preventDefault();
@@ -58,31 +65,50 @@ function App() {
 
   return (
     <div className="container">
-      <h1>Task Manager</h1>
+      <h1>My Tasks</h1>
       <form onSubmit={addTodo} className="todo-form">
         <input 
           value={inputValue} 
           onChange={(e) => setInputValue(e.target.value)} 
           placeholder="What needs to be done?"
         />
-        <button type="submit">Add Task</button>
+        <button type="submit">Add</button>
       </form>
+
+      <div className="filter-section">
+        <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
+        <button className={filter === 'active' ? 'active' : ''} onClick={() => setFilter('active')}>Active</button>
+        <button className={filter === 'completed' ? 'active' : ''} onClick={() => setFilter('completed')}>Completed</button>
+      </div>
+
       <ul className="todo-list">
-        {todos.map(todo => (
+        {filteredTodos.map(todo => (
           <li key={todo.id} className={todo.completed ? 'completed' : ''}>
             {editingId === todo.id ? (
               <div className="edit-mode">
                 <input value={editText} onChange={(e) => setEditText(e.target.value)} />
                 <button onClick={() => saveEdit(todo.id)}>Save</button>
+                <button className="cancel-btn" onClick={() => setEditingId(null)}>Cancel</button>
               </div>
             ) : (
               <>
-                <span onClick={() => toggleTodo(todo.id, todo.completed)}>
-                  {todo.text}
-                </span>
+                <div className="todo-content">
+                  <input 
+                    type="checkbox" 
+                    checked={todo.completed} 
+                    onChange={() => toggleTodo(todo.id, todo.completed)} 
+                  />
+                  <span className="todo-text">
+                    {todo.text}
+                  </span>
+                </div>
                 <div className="actions">
-                  <button className="edit-btn" onClick={() => startEdit(todo)}>Edit</button>
-                  <button className="delete-btn" onClick={() => deleteTodo(todo.id)}>Delete</button>
+                  <button className="edit-btn" onClick={() => startEdit(todo)} title="Edit Task">
+                    ✎
+                  </button>
+                  <button className="delete-btn" onClick={() => deleteTodo(todo.id)} title="Delete Task">
+                    ×
+                  </button>
                 </div>
               </>
             )}
