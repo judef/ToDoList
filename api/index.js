@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
-const { clerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
+const { ClerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
 require('dotenv').config();
 
 const app = express();
@@ -15,7 +15,7 @@ if (!process.env.DATABASE_URL || !process.env.CLERK_SECRET_KEY) {
 
 // Apply Clerk authentication middleware to all /api/tasks routes
 // This will ensure that req.auth is populated with user information
-app.use('/api/tasks', clerkExpressRequireAuth());
+app.use('/api/tasks', ClerkExpressRequireAuth());
 
 // PostgreSQL Connection Pool
 const pool = new Pool({
