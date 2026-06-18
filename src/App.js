@@ -8,7 +8,7 @@ function App() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    fetch('/api/todos')
+    fetch('/api/tasks')
       .then(res => res.json())
       .then(data => setTodos(data));
   }, []);
@@ -22,7 +22,7 @@ function App() {
   const addTodo = async (e) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    const res = await fetch('/api/todos', {
+    const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: inputValue })
@@ -33,7 +33,7 @@ function App() {
   };
 
   const toggleTodo = async (id, completed) => {
-    const res = await fetch(`/api/todos/${id}`, {
+    const res = await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ completed: !completed })
@@ -43,7 +43,7 @@ function App() {
   };
 
   const deleteTodo = async (id) => {
-    await fetch(`/api/todos/${id}`, { method: 'DELETE' });
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     setTodos(todos.filter(t => t.id !== id));
   };
 
@@ -53,7 +53,7 @@ function App() {
   };
 
   const saveEdit = async (id) => {
-    const res = await fetch(`/api/todos/${id}`, {
+    const res = await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: editText })
