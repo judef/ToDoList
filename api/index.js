@@ -1,21 +1,26 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+require('dotenv').config();
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-// Firebase SQL Connect (PostgreSQL) configuration
+if (!process.env.DATABASE_URL) {
+  console.error('CRITICAL: DATABASE_URL environment variable is not defined.');
+}
+
+// PostgreSQL Connection Pool
 const pool = new Pool({
-  connectionString: process.env.FIREBASE_URL,
-  database: 'todolist-bf982-database', // Service: todolist-bf982-service
+  connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Required for most managed cloud SQL instances
+    rejectUnauthorized: false
   }
 });
 
-// Initialize the tasks table if it doesn't exist
+// Initialize Database Table
 const initDb = async () => {
   try {
     await pool.query(`
@@ -23,7 +28,7 @@ const initDb = async () => {
         id BIGINT PRIMARY KEY,
         text TEXT NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
-        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('Database initialized successfully');
@@ -36,8 +41,8 @@ initDb();
 // Get all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM tasks ORDER BY createdAt DESC');
-    // Convert BIGINT results to Numbers for frontend compatibility
+    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+    // Convert BIGINT to Number for frontend compatibility
     const tasks = result.rows.map(row => ({ ...row, id: Number(row.id) }));
     res.json(tasks);
   } catch (error) {
@@ -52,6 +57,7 @@ app.post('/api/tasks', async (req, res) => {
     if (!text || text.trim() === '') {
       return res.status(400).json({ message: 'Task text is required' });
     }
+
     const id = Date.now();
     const result = await pool.query(
       'INSERT INTO tasks (id, text, completed) VALUES ($1, $2, $3) RETURNING *',
@@ -66,8 +72,8 @@ app.post('/api/tasks', async (req, res) => {
 // Update a task
 app.put('/api/tasks/:id', async (req, res) => {
   try {
-  const { id } = req.params;
-  const { text, completed } = req.body;
+    const { id } = req.params;
+    const { text, completed } = req.body;
 
     const result = await pool.query(
       'UPDATE tasks SET text = COALESCE($1, text), completed = COALESCE($2, completed) WHERE id = $3 RETURNING *',
@@ -86,12 +92,12 @@ app.put('/api/tasks/:id', async (req, res) => {
 // Delete a task
 app.delete('/api/tasks/:id', async (req, res) => {
   try {
-  const { id } = req.params;
+    const { id } = req.params;
     const result = await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Task not found' });
     }
-  res.status(204).send();
+    res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: 'Error deleting task' });
   }
