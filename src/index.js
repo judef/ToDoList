@@ -1,4 +1,5 @@
 
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import AppWithClerk from './App'; // Import the new wrapper component
 import './App.css';
