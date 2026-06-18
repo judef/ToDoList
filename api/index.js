@@ -1,72 +1,96 @@
 const express = require('express');
 const cors = require('cors');
+const { Pool } = require('pg');
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-let todos = [
-  { id: 1, text: 'Learn React', completed: false },
-  { id: 2, text: 'Build a To-Do App', completed: true },
-  { id: 3, text: 'Learn Express JS', completed: true }
-];
+// Firebase SQL Connect (PostgreSQL) configuration
+const pool = new Pool({
+  connectionString: process.env.FIREBASE_URL,
+  database: 'todolist-bf982-database', // Service: todolist-bf982-service
+  ssl: {
+    rejectUnauthorized: false // Required for most managed cloud SQL instances
+  }
+});
+
+// Initialize the tasks table if it doesn't exist
+const initDb = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id BIGINT PRIMARY KEY,
+        text TEXT NOT NULL,
+        completed BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+  }
+};
+initDb();
 
 // Get all tasks
-app.get('/api/tasks', (req, res) => {
+app.get('/api/tasks', async (req, res) => {
   try {
-    res.json(todos);
+    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+    // Convert BIGINT results to Numbers for frontend compatibility
+    const tasks = result.rows.map(row => ({ ...row, id: Number(row.id) }));
+    res.json(tasks);
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving tasks' });
   }
 });
 
 // Add a task
-app.post('/api/tasks', (req, res) => {
+app.post('/api/tasks', async (req, res) => {
   try {
     const { text } = req.body;
     if (!text || text.trim() === '') {
       return res.status(400).json({ message: 'Task text is required' });
     }
-    const newTodo = {
-      id: Date.now(),
-      text: text.trim(),
-      completed: false
-    };
-    todos.push(newTodo);
-    res.status(201).json(newTodo);
+    const id = Date.now();
+    const result = await pool.query(
+      'INSERT INTO tasks (id, text, completed) VALUES ($1, $2, $3) RETURNING *',
+      [id, text.trim(), false]
+    );
+    res.status(201).json({ ...result.rows[0], id: Number(result.rows[0].id) });
   } catch (error) {
     res.status(500).json({ message: 'Error creating task' });
   }
 });
 
 // Update a task
-app.put('/api/tasks/:id', (req, res) => {
+app.put('/api/tasks/:id', async (req, res) => {
   try {
   const { id } = req.params;
   const { text, completed } = req.body;
 
-    const taskIndex = todos.findIndex(t => t.id == id);
-    if (taskIndex === -1) {
+    const result = await pool.query(
+      'UPDATE tasks SET text = COALESCE($1, text), completed = COALESCE($2, completed) WHERE id = $3 RETURNING *',
+      [text, completed, id]
+    );
+
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Task not found' });
     }
-
-  todos = todos.map(t => t.id == id ? { ...t, text: text ?? t.text, completed: completed ?? t.completed } : t);
-  const updatedTodo = todos.find(t => t.id == id);
-  res.json(updatedTodo);
+    res.json({ ...result.rows[0], id: Number(result.rows[0].id) });
   } catch (error) {
     res.status(500).json({ message: 'Error updating task' });
   }
 });
 
 // Delete a task
-app.delete('/api/tasks/:id', (req, res) => {
+app.delete('/api/tasks/:id', async (req, res) => {
   try {
   const { id } = req.params;
-    const exists = todos.some(t => t.id == id);
-    if (!exists) {
+    const result = await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Task not found' });
     }
-  todos = todos.filter(t => t.id != id);
   res.status(204).send();
   } catch (error) {
     res.status(500).json({ message: 'Error deleting task' });
