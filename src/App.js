@@ -222,4 +222,5 @@ function AppWithClerk() {
 }
 
 export default AppWithClerk;
+
 //export default App;
