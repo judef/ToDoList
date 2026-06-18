@@ -1,16 +1,33 @@
 import React, { useState, useEffect } from 'react';
 
+// Accessing the API base URL from environment variables
+const API_BASE = process.env.REACT_APP_API_URL || '';
+
 function App() {
   const [todos, setTodos] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState('');
   const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('/api/tasks')
-      .then(res => res.json())
-      .then(data => setTodos(data));
+    const fetchTasks = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/api/tasks`);
+        if (!res.ok) throw new Error('Failed to fetch tasks.');
+        const data = await res.json();
+        setTodos(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTasks();
   }, []);
 
   const filteredTodos = todos.filter(todo => {
@@ -22,29 +39,47 @@ function App() {
   const addTodo = async (e) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
-    const res = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: inputValue })
-    });
-    const newTodo = await res.json();
-    setTodos([...todos, newTodo]);
-    setInputValue('');
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: inputValue })
+      });
+      if (!res.ok) throw new Error('Failed to add task.');
+      const newTodo = await res.json();
+      setTodos([...todos, newTodo]);
+      setInputValue('');
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const toggleTodo = async (id, completed) => {
-    const res = await fetch(`/api/tasks/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ completed: !completed })
-    });
-    const updated = await res.json();
-    setTodos(todos.map(t => t.id === id ? updated : t));
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: !completed })
+      });
+      if (!res.ok) throw new Error('Failed to update task.');
+      const updated = await res.json();
+      setTodos(todos.map(t => t.id === id ? updated : t));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const deleteTodo = async (id) => {
-    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-    setTodos(todos.filter(t => t.id !== id));
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete task.');
+      setTodos(todos.filter(t => t.id !== id));
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const startEdit = (todo) => {
@@ -53,19 +88,33 @@ function App() {
   };
 
   const saveEdit = async (id) => {
-    const res = await fetch(`/api/tasks/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: editText })
-    });
-    const updated = await res.json();
-    setTodos(todos.map(t => t.id === id ? updated : t));
-    setEditingId(null);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: editText })
+      });
+      if (!res.ok) throw new Error('Failed to save changes.');
+      const updated = await res.json();
+      setTodos(todos.map(t => t.id === id ? updated : t));
+      setEditingId(null);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
     <div className="container">
       <h1>My Tasks</h1>
+      
+      {error && (
+        <div className="error-banner" style={{ color: 'red', marginBottom: '10px' }}>
+          Error: {error} 
+          <button onClick={() => setError(null)} style={{ marginLeft: '10px' }}>×</button>
+        </div>
+      )}
+
       <form onSubmit={addTodo} className="todo-form">
         <input 
           value={inputValue} 
@@ -81,6 +130,9 @@ function App() {
         <button className={filter === 'completed' ? 'active' : ''} onClick={() => setFilter('completed')}>Completed</button>
       </div>
 
+      {loading ? (
+        <div className="loading">Loading tasks...</div>
+      ) : (
       <ul className="todo-list">
         {filteredTodos.map(todo => (
           <li key={todo.id} className={todo.completed ? 'completed' : ''}>
@@ -115,6 +167,7 @@ function App() {
           </li>
         ))}
       </ul>
+      )}
     </div>
   );
 }
