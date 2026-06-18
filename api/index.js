@@ -23,7 +23,7 @@ const initDb = async () => {
         id BIGINT PRIMARY KEY,
         text TEXT NOT NULL,
         completed BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     console.log('Database initialized successfully');
@@ -36,7 +36,7 @@ initDb();
 // Get all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+    const result = await pool.query('SELECT * FROM tasks ORDER BY createdAt DESC');
     // Convert BIGINT results to Numbers for frontend compatibility
     const tasks = result.rows.map(row => ({ ...row, id: Number(row.id) }));
     res.json(tasks);
